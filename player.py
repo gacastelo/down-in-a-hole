@@ -42,7 +42,7 @@ class Player:
         self.moving = False
 
         # Posição e física
-        self.pos_x = 10
+        self.pos_x = 1000
         self.pos_y = 535
         self.vel_max = 10
         self.vel_x = 0
@@ -141,28 +141,32 @@ class Player:
         else:
             self.frame_index = 0
 
-    def desenhar(self, tela):
-        if not self.no_chao:
-            if self.direction == "right":
-                imagem = self.imagem_pulo
+    def desenhar(self, tela, boss=False):
+        if not boss:
+            if not self.no_chao:
+                if self.direction == "right":
+                    imagem = self.imagem_pulo
+                else:
+                    imagem = self.imagem_pulo_esquerda
+            elif self.moving:
+                if self.direction == "right":
+                    imagem = self.frames_right[self.frame_index]
+                else:
+                    imagem = self.frames_left[self.frame_index]
             else:
-                imagem = self.imagem_pulo_esquerda
-        elif self.moving:
-            if self.direction == "right":
-                imagem = self.frames_right[self.frame_index]
-            else:
-                imagem = self.frames_left[self.frame_index]
+                if self.direction == "right":
+                    imagem = self.imagem_parado
+                else:
+                    imagem = self.imagem_parado_esquerda
+
+            # Ajuste vertical (exemplo: 0 para nenhum ajuste)
+            ajuste_vertical = 6
+
+            offset_x = (imagem.get_width() - self.rect.width) // 2
+            offset_y = (imagem.get_height() - self.rect.height) - ajuste_vertical
+
+            # Usar offsets para desenhar o sprite centralizado em relação à hitbox
+            tela.blit(imagem, (int(self.pos_x - offset_x), int(self.pos_y - offset_y)))
         else:
-            if self.direction == "right":
-                imagem = self.imagem_parado
-            else:
-                imagem = self.imagem_parado_esquerda
-
-        # Ajuste vertical (exemplo: 0 para nenhum ajuste)
-        ajuste_vertical = 6
-
-        offset_x = (imagem.get_width() - self.rect.width) // 2
-        offset_y = (imagem.get_height() - self.rect.height) - ajuste_vertical
-
-        # Usar offsets para desenhar o sprite centralizado em relação à hitbox
-        tela.blit(imagem, (int(self.pos_x - offset_x), int(self.pos_y - offset_y)))
+            imagem = pygame.transform.scale(pygame.image.load("rivem_ani/4_riven_moviment.png"), (self.rect.width, self.rect.height))
+            tela.blit(imagem, self.rect)

@@ -2,4 +2,4 @@ import pygame
 from os.path import join 
 from os import walk
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 1380,720
+WINDOW_WIDTH, WINDOW_HEIGHT = 1600,900

@@ -5,7 +5,7 @@ from music import Music
 from hostile import Hostile
 from boss import Boss
 import random
-
+import pygame
 
 pygame.init()
 
@@ -19,14 +19,16 @@ relogio = pygame.time.Clock()
 # Estado do jogo
 death = False
 executando = True
-#-----------------
 no_menu = True 
 
-# Recursos
+# Player
 riven = Player()
 riven_dead = pygame.image.load('images/player_dead.png').convert_alpha()
 riven_dead = pygame.transform.scale(riven_dead, (200, 215))
 
+# Carregar player bossfight (placeholder)
+riven_boss_img = pygame.image.load('rivem_ani/4_riven_moviment.png').convert_alpha()
+riven_boss_img_scaled = pygame.transform.scale(riven_boss_img, (200, 200))
 
 # ------- Carregamento único das imagens -----------------------------------------
 texura_ba = pygame.image.load('images/barreira/olho_barreira.png').convert_alpha()
@@ -38,12 +40,9 @@ textura_teto1 = pygame.transform.scale(textura_teto1, (100, 90))
 textura_teto2 = pygame.image.load('images/plat_caixa.png').convert_alpha()
 textura_teto2 = pygame.transform.scale(textura_teto2, (120, 110))
 
-textura_teto3 = pygame.transform.scale(textura_teto1, (100, 90))
-
 textura_chao = pygame.image.load('images/chão.png').convert_alpha()
 textura_chao = pygame.transform.scale(textura_chao, (1500, 200))
 
-# novas cargas fora do loop
 tex_in1_img = pygame.image.load('images/plat_viva.png').convert_alpha()
 tex_in1_img = pygame.transform.scale(tex_in1_img, (700, 290))
 
@@ -72,7 +71,7 @@ inimigos = [
     Hostile(tela, 6500, 590, 100, 110, pasta='images/inimigos/jar', base_name='jar', frame_count=10),
 ]
 
-# configurações de inimigos
+# Configurações de inimigos
 inimigos[0].vel_x = 5
 inimigos[0].limite_esquerda = 1500
 inimigos[0].limite_direita = 1750
@@ -138,6 +137,10 @@ def reset_player():
     riven.tempo_pulo_atual = 0
     camera_x = 0
 
+def gerar_sequencia():
+    teclas_possiveis = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
+    return [random.choice(teclas_possiveis) for _ in range(4)]
+
 def handle_death_screen(teclas):
     global death, tempo_inicial
     tela.blit(riven_dead, ((WINDOW_WIDTH // 2 + 40), (WINDOW_HEIGHT // 2 + 100)))
@@ -183,15 +186,21 @@ def draw_world(camera_x):
 
 # MENU INICIAL ---
 def menu_inicial():
-    # desenha o fundo do menu
     fundo_menu = pygame.image.load('images/img_menu.png').convert()
     fundo_menu = pygame.transform.scale(fundo_menu, (1550, 800))
     tela.blit(fundo_menu, (0, 0))
     pygame.display.flip()
 
+# -------------------- QTE SYSTEM ----------------------
+sequencia = []
+indice_seq = 0
+bossfight = True
+boss_hp = 100
+
 def gerar_sequencia():
     teclas_possiveis = [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d]
     return [random.choice(teclas_possiveis) for _ in range(4)]
+# ------------------------------------------------------
 
 # Loop do menu inicial
 while no_menu:
@@ -209,28 +218,18 @@ while no_menu:
     menu_inicial()
     relogio.tick(30)
 
-
 tempo_inicial = pygame.time.get_ticks()
-bossfight = True
-rolando = False
-a = False
-b = False
-chanel = pygame.mixer.Channel(0)
-sequencia = []
-indice_seq = 0
-cont = 0
 boss = Boss()
+
 # --- LOOP PRINCIPAL ---
 while executando:
-    eventos = pygame.event.get()
-    # Cronômetro
+    eventos = pygame.event.get()  # Captura todos os eventos de uma vez
     for evento in eventos:
         if evento.type == pygame.QUIT:
             executando = False
+
     teclas = pygame.key.get_pressed()
-    if not a:
-        Love_Hate_Love = Music('music/Again.mp3')
-        a = True
+
     if not bossfight:
         for enemy in inimigos:
             if enemy.vel_x != 0:
@@ -249,95 +248,56 @@ while executando:
             relogio.tick(10)
             continue
 
-
-        mapa.paint(tela,camera_x)
+        mapa.paint(tela, camera_x)
         camera_update(riven)
         objetos_colisao = draw_world(camera_x)
         riven.mover(teclas, objetos_colisao)
         riven.desenhar(tela)
 
-        tex = pygame.Rect(2840 - camera_x, 410, 700, 290)
-        tela.blit(tex_in1_img, tex.topleft)
-
-        ponte = pygame.Rect(5500 - camera_x, 476, 1500, 400)
-        tela.blit(ponte1_img, ponte.topleft)
-
-        tex_ladder = pygame.Rect(9500 - camera_x, 210, 700, 490)
-        tela.blit(ladder_img, tex_ladder.topleft)
-
         boss_init = pygame.Rect(9750 - camera_x, 600, 7000, 250)
         pygame.draw.rect(tela, (255, 0, 0), boss_init)
-
         if boss_init.colliderect(riven.rect):
             bossfight = True
             print("Bossfight")
-
-
-        for enemy in inimigos:
-            if enemy.draw(tela, camera_x, riven):
-                death = False
-                break 
-        if riven.pos_y >= 2000 and not bossfight:
-            death = True
     else:
-        Love_Hate_Love.stop_music()
-        boss.start(tela)
-        if boss.freaky and boss.is_alive():
-            if not b:
-                chanel.play(boss.battle)
-                b = True
-            vs = None
-            sigma = None
-            pygame.draw.rect(tela, (0, 0, 0), (0, 0, WINDOW_WIDTH*2, WINDOW_HEIGHT*2))
-            boss.draw(tela)
-            riven_boss = pygame.Rect(50, (WINDOW_HEIGHT//2)-100, 50, 20)
-            riven_boss_img = pygame.image.load('rivem_ani/4_riven_moviment.png').convert_alpha()
-            tela.blit(pygame.transform.scale(riven_boss_img, (200, 200)), riven_boss.topleft)
-            if not sequencia:
-                sequencia = gerar_sequencia()
-                indice_seq = 0
-                print("Sequência:", [pygame.key.name(t).upper() for t in sequencia])
-            
-            fonte = pygame.font.SysFont(None, 50)
-            for i, tecla in enumerate(sequencia):
-                cor = (255, 255, 255)
-                if i < indice_seq:
-                    cor = (0, 255, 0)
-                texto = fonte.render(pygame.key.name(tecla).upper(), True, cor)
-                tela.blit(texto, (100 + i*60, 100))
+        # Bossfight
+        pygame.draw.rect(tela, (0, 0, 0), (0, 0, WINDOW_WIDTH*2, WINDOW_HEIGHT*2))
+        boss.draw(tela)
+        tela.blit(riven_boss_img_scaled, (50, (WINDOW_HEIGHT//2)-100))
 
+        # Gera sequência nova se precisar
+        if not sequencia:
+            sequencia = gerar_sequencia()
+            indice_seq = 0
+            print("Sequência:", [pygame.key.name(t).upper() for t in sequencia])
 
-            for evento in eventos:
-                if evento.type == pygame.KEYDOWN:
-                    if evento.key == sequencia[indice_seq]:
-                        indice_seq += 1
-                        if indice_seq >= len(sequencia):
-                            boss.take_damage(50)
-                            print("Acertou! Boss HP:", boss.health)
-                            sequencia = []
-                    else:
-                        print("Errou! Reiniciando sequência")
-                        boss.heal(250)
-                        indice_seq = 0
+        # Mostrar sequência
+        fonte = pygame.font.SysFont(None, 50)
+        for i, tecla in enumerate(sequencia):
+            cor = (255, 255, 255)
+            if i < indice_seq:
+                cor = (0, 255, 0)
+            texto = fonte.render(pygame.key.name(tecla).upper(), True, cor)
+            tela.blit(texto, (100 + i*60, 100))
 
-            pygame.draw.rect(tela, (255, 0, 0), (400, 50, 800, 30))
-            pygame.draw.rect(tela, (0, 255, 0), (400, 50, int(800 * (boss.health/100)), 30))
-        else:
-                
+        # Processar entradas do jogador
+        for evento in eventos:
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == sequencia[indice_seq]:
+                    indice_seq += 1
+                    if indice_seq >= len(sequencia):
+                        boss_hp -= 20
+                        print("Acertou! Boss HP:", boss_hp)
+                        sequencia = []
+                else:
+                    print("Errou! Reiniciando sequência")
+                    indice_seq = 0
 
-                boss.rect.center = (WINDOW_WIDTH, WINDOW_HEIGHT - 200 + (cont * 50))
-                cont += 1
-                pygame.draw.rect(tela, (0, 0, 0), (0, 0, WINDOW_WIDTH*2, WINDOW_HEIGHT*2))
-                boss.draw(tela)
-                pygame.display.update()
-                pygame.time.delay(100)
+        # Barra de vida do boss
+        pygame.draw.rect(tela, (255, 0, 0), (400, 50, 800, 30))
+        pygame.draw.rect(tela, (0, 255, 0), (400, 50, int(800 * (boss_hp/100)), 30))
 
-        
-
-
-
-
-    # Cronômetro MM:SS
+    # Cronômetro
     tempo_decorrido = (pygame.time.get_ticks() - tempo_inicial) // 1000
     minutos = tempo_decorrido // 60
     segundos = tempo_decorrido % 60
