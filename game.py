@@ -500,7 +500,6 @@ while executando:
         tela.blit(ladder_img, tex_ladder.topleft)
 
         boss_init = pygame.Rect(9750 - camera_x, 600, 7000, 250)
-        pygame.draw.rect(tela, (255, 0, 0), boss_init)
 
         if boss_init.colliderect(riven.rect):
             bossfight = True
@@ -532,6 +531,7 @@ while executando:
         for enemy in inimigos:
             if enemy.draw(tela, camera_x, riven):
                 riven.tomar_dano() 
+                pass
         if riven.pos_y >= 2000 and not bossfight:
             death = True
     else:
