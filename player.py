@@ -1,4 +1,5 @@
 from settings import *
+import random
 class Player:
     def __init__(self):
         
@@ -13,6 +14,13 @@ class Player:
             pygame.image.load('rivem_ani/2_riven_moviment.png'),(sprite_wid, sprite_hei)),
             pygame.transform.scale(
             pygame.image.load('rivem_ani/3_riven_moviment.png'),(sprite_wid, sprite_hei)),
+        ]
+
+        self.frames_boss = [
+            pygame.transform.scale(
+            pygame.image.load('rivem_ani/0.png'), (sprite_wid, sprite_hei)),
+            pygame.transform.scale(
+            pygame.image.load('rivem_ani/1.png'),(sprite_wid, sprite_hei))
         ]
 
         # Escalar frames para o tamanho
@@ -46,7 +54,7 @@ class Player:
         self.pos_y = 535
         self.vel_max = 10
         self.vel_x = 0
-        self.atrito = 0.5
+        self.atrito = 0.9
 
         self.vel_y = 0
         self.gravidade = 0.5
@@ -60,7 +68,25 @@ class Player:
         self.no_chao = False
         self.rect = pygame.Rect(self.pos_x, self.pos_y, 50, 65)
 
-    def mover(self, teclas, objetos_colisao):
+        self.vida = 3
+
+        self.hit_last_cooldown = 0
+    
+    def tomar_dano(self):
+        now = pygame.time.get_ticks()
+        if now - self.hit_last_cooldown > 300:
+            self.hit_last_cooldown = now
+            if self.vida > 0:
+                self.vida -= 1
+    
+    def recuperar_vida(self):
+        if self.vida < 3:
+            self.vida += 1
+
+    def is_alive(self):
+        return self.vida > 0
+
+    def mover(self, teclas, objetos_colisao, inimigos):
         # Movimento horizontal e animação
         if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
             self.vel_x = -self.vel_max
@@ -91,6 +117,15 @@ class Player:
                     self.pos_x = obj.left - self.rect.width
                 elif self.vel_x < 0:
                     self.pos_x = obj.right
+                self.vel_x = 0
+                self.rect.topleft = (self.pos_x, self.pos_y)
+        
+        for inimigo in inimigos:
+            if self.rect.colliderect(inimigo.rect):
+                if self.vel_x > 0:
+                    self.pos_x = inimigo.rect.left - self.rect.width
+                elif self.vel_x < 0:
+                    self.pos_x = inimigo.rect.right
                 self.vel_x = 0
                 self.rect.topleft = (self.pos_x, self.pos_y)
 
@@ -142,7 +177,7 @@ class Player:
             self.frame_index = 0
 
     def desenhar(self, tela, boss=False):
-        if not boss:
+        if not boss: 
             if not self.no_chao:
                 if self.direction == "right":
                     imagem = self.imagem_pulo
@@ -159,14 +194,18 @@ class Player:
                 else:
                     imagem = self.imagem_parado_esquerda
 
-            # Ajuste vertical (exemplo: 0 para nenhum ajuste)
             ajuste_vertical = 6
-
             offset_x = (imagem.get_width() - self.rect.width) // 2
             offset_y = (imagem.get_height() - self.rect.height) - ajuste_vertical
 
-            # Usar offsets para desenhar o sprite centralizado em relação à hitbox
             tela.blit(imagem, (int(self.pos_x - offset_x), int(self.pos_y - offset_y)))
+
         else:
-            imagem = pygame.transform.scale(pygame.image.load("rivem_ani/4_riven_moviment.png"), (self.rect.width, self.rect.height))
+            # --- animação de boss (alternando 0 e 1) ---
+            self.tempo_anim += self.velocidade_anim
+            if self.tempo_anim >= 1:
+                self.tempo_anim = 0
+                self.frame_index = (self.frame_index + 1) % len(self.frames_boss)
+
+            imagem = self.frames_boss[self.frame_index]
             tela.blit(imagem, self.rect)

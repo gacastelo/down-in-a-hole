@@ -2,7 +2,7 @@
 from settings import *
 import os
 class Hostile:
-    def __init__(self, tela, x, y, largura, altura, pasta='images/inimigos/jar', base_name='jar', frame_count=10, velocidade_anim=0.12):
+    def __init__(self, tela, camera_x, x, y, largura, altura, pasta='images/inimigos/jar', base_name='jar', frame_count=10, velocidade_anim=0.12):
         self.vel_x = 0
         self.direcao_x = 1
         self.limite_esquerda = x
@@ -17,7 +17,7 @@ class Hostile:
 
         # Carrega frames dinamicamente
         self.frames = self.carregar_frames(pasta, base_name, frame_count, largura, altura)
-
+        self.rect = pygame.Rect(x-camera_x, y, largura+1, altura+1)
         # Controle de animação
         self.frame_index = 0
         self.velocidade_anim = velocidade_anim
@@ -47,12 +47,16 @@ class Hostile:
             self.enemy.width,
             self.enemy.height
         )
-
+        self.rect = pygame.Rect(self.enemy.x - camera_x,
+            self.enemy.y,
+            self.enemy.width,
+            self.enemy.height)
         # Desenha frame atual
         tela.blit(self.frames[int(self.frame_index)], (enemy_pos.x, enemy_pos.y))
 
         # Debug da hitbox
-        pygame.draw.rect(tela, (250, 0, 0), enemy_pos, 2)
+       # pygame.draw.rect(tela, (250, 0, 0), enemy_pos, 2)
+        #pygame.draw.rect(tela, (0, 250, 0), self.rect, 2)
 
         # Verifica colisão
         return riven.rect.colliderect(enemy_pos)
